@@ -15,6 +15,8 @@ ANTHROPIC_MODEL=claude-3-5-sonnet-latest
 
 GOOGLE_GENERATIVE_AI_API_KEY=...
 GOOGLE_MODEL=gemini-1.5-flash-latest
+
+LOCAL_OLLAMA_URL="http://localhost:11434/"
 ```
 
 2. Install deps and run dev server:
