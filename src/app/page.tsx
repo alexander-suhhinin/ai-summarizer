@@ -21,6 +21,7 @@ export default function Home() {
     "You are an expert editor. Produce a concise, structured, and informative summary.\n- Match the language of the input when possible.\n- Highlight 5–8 key bullet points.\n- Add a short conclusion (2–3 sentences).\n- Avoid fluff."
   );
   const [showSystemModal, setShowSystemModal] = useState(false);
+  const [ollamaUp, setOllamaUp] = useState<boolean>(true);
 
   const canSummarize = useMemo(() => (url.trim() || text.trim()) && !isSummarizing, [url, text, isSummarizing]);
   const canAsk = useMemo(() => summary.trim().length > 0 && input.trim().length > 0 && !isChatting, [summary, input, isChatting]);
@@ -91,7 +92,6 @@ export default function Home() {
           setMessages((prev) => prev.map((m) => (m.id === assistant.id ? assistant : m)));
         }
       }
-      // persist
       persistState(provider, url, text, summary, [...nextMessages, assistant], systemPrompt);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Unknown error";
@@ -102,7 +102,6 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // load persisted state
     try {
       const raw = localStorage.getItem("ai-summarizer-state");
       if (raw) {
@@ -121,6 +120,24 @@ export default function Home() {
     persistState(provider, url, text, summary, messages, systemPrompt);
   }, [provider, url, text, summary, messages, systemPrompt]);
 
+  useEffect(() => {
+    // probe local ollama
+    const controller = new AbortController();
+    fetch("/api/ollama/health", { signal: controller.signal })
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({ ok: false }));
+        setOllamaUp(!!data.ok);
+        if (!data.ok && provider === "ollama") {
+          setProvider("openai");
+        }
+      })
+      .catch(() => {
+        setOllamaUp(false);
+        if (provider === "ollama") setProvider("openai");
+      });
+    return () => controller.abort();
+  }, []);
+
   return (
     <>
     <div className="font-sans max-w-3xl mx-auto px-4 py-8">
@@ -136,7 +153,7 @@ export default function Home() {
             <option value="openai">OpenAI</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
-            <option value="ollama">Ollama (local)</option>
+            <option value="ollama" disabled={!ollamaUp}>Ollama (local){!ollamaUp ? " — unavailable" : ""}</option>
           </select>
           <span className="text-xs text-gray-500">OpenAI/Anthropic/Google or local Ollama</span>
           <button

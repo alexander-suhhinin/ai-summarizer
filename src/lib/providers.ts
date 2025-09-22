@@ -37,7 +37,7 @@ export function hasProviderKey(provider: ProviderKey): boolean {
 		case "google":
 			return !!process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 		case "ollama":
-			return true;
+			return true; // availability checked separately via health endpoint
 		default:
 			return false;
 	}
